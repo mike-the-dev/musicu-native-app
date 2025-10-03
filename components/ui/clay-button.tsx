@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 interface ClayButtonProps {
   children: React.ReactNode;
@@ -23,7 +23,7 @@ const ClayButton = ({
       case 'primary':
         return 'bg-blue-500 shadow-[4px_4px_8px_#3b82f6,-4px_-4px_8px_#60a5fa] active:shadow-[2px_2px_4px_#3b82f6,-2px_-2px_4px_#60a5fa]';
       case 'secondary':
-        return 'bg-slate-200 shadow-[4px_4px_8px_#cbd5e1,-4px_-4px_8px_#f1f5f9] active:shadow-[2px_2px_4px_#cbd5e1,-2px_-2px_4px_#f1f5f9]';
+        return 'bg-sky-500 shadow-[4px_4px_8px_#0ea5e9,-4px_-4px_8px_#38bdf8] active:shadow-[2px_2px_4px_#0ea5e9,-2px_-2px_4px_#38bdf8]';
       case 'outline':
         return 'bg-white border border-slate-300 shadow-[4px_4px_8px_#e2e8f0,-4px_-4px_8px_#ffffff] active:shadow-[2px_2px_4px_#e2e8f0,-2px_-2px_4px_#ffffff]';
       default:
@@ -49,7 +49,7 @@ const ClayButton = ({
       case 'primary':
         return 'text-white font-semibold';
       case 'secondary':
-        return 'text-slate-700 font-semibold';
+        return 'text-white font-semibold';
       case 'outline':
         return 'text-slate-700 font-semibold';
       default:
@@ -69,11 +69,7 @@ const ClayButton = ({
       ]}
     >
       <View className="flex-row items-center justify-center">
-        {typeof children === 'string' ? (
-          <Text className={`${getTextColor()} text-center`}>{children}</Text>
-        ) : (
-          children
-        )}
+        {children}
       </View>
     </Pressable>
   );

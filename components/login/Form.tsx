@@ -99,7 +99,9 @@ export default function Form({ onLogin, isLoading = false, error }: FormProps) {
         size="lg"
         disabled={isLoading}
       >
-        {isLoading ? 'Signing In...' : 'Sign In'}
+        <Text className="text-white font-semibold">
+          {isLoading ? 'Signing In...' : 'Sign In'}
+        </Text>
       </ClayButton>
     </ClayCard>
   );

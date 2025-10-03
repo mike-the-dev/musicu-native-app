@@ -1,6 +1,6 @@
 import { cva } from "class-variance-authority";
 import * as React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import { cn } from "../../lib/utils";
 
@@ -49,11 +49,7 @@ const Button = React.forwardRef<View, ButtonProps>(({ className, variant, size, 
       {...props}
     >
       <View className="flex-row items-center justify-center gap-2">
-        {typeof children === 'string' ? (
-          <Text className="text-sm font-medium">{children}</Text>
-        ) : (
-          children
-        )}
+        {children}
       </View>
     </Pressable>
   );
