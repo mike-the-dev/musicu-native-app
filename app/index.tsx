@@ -24,7 +24,7 @@ export default function RoleSelection() {
           variant="primary"
           size="lg"
         >
-          Teacher
+          <Text style={{ color: 'white'}}>Teacher</Text>
         </ClayButton>
         <ClayButton 
           onPress={handleStudentSelection}
@@ -32,7 +32,7 @@ export default function RoleSelection() {
           variant="outline"
           size="lg"
         >
-          Student
+          <Text>Student</Text>
         </ClayButton>
       </ClayCard>
     </SafeAreaView>
