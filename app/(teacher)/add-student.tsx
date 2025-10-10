@@ -1,8 +1,10 @@
 import { GenerateCodeForm, InvitationCodesList } from '@/components/add-student';
+import { couponAPI } from '@/lib/api';
+import { CouponDTO, CouponInput } from '@/types/coupon';
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 
 /**
  * @author mike-the-dev (Michael Camacho)
@@ -19,9 +21,87 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
  */
 
 export default function AddStudent() {
-  const handleGenerate = (useLimit: string, expiresIn: string) => {
-    console.log('Generate pressed with:', { useLimit, expiresIn });
-    // TODO: Implement generate join code logic
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [coupons, setCoupons] = useState<CouponDTO[]>([]);
+  const [isLoadingCoupons, setIsLoadingCoupons] = useState(true);
+
+  // Fetch coupons from the backend
+  const fetchCoupons = async () => {
+    try {
+      setIsLoadingCoupons(true);
+      console.log('Fetching coupons...');
+      
+      const fetchedCoupons = await couponAPI.listCoupons();
+      console.log('Coupons fetched successfully:', fetchedCoupons);
+      
+      setCoupons(fetchedCoupons);
+    } catch (error: any) {
+      console.error('Error fetching coupons:', error);
+      
+      // Handle different error types
+      let errorMessage = 'Failed to load coupons.';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'You are not authorized. Please log in again.';
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error.message === 'Network Error') {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+      
+      Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
+    } finally {
+      setIsLoadingCoupons(false);
+    }
+  };
+
+  // Fetch coupons when the screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchCoupons();
+    }, [])
+  );
+
+  const handleGenerate = async (couponData: CouponInput) => {
+    try {
+      setIsGenerating(true);
+      console.log('Generating coupon with:', couponData);
+      
+      // Call the API to create a new coupon
+      const newCoupon = await couponAPI.createCoupon(couponData);
+      
+      console.log('Coupon created successfully:', newCoupon);
+      
+      // Show success message
+      Alert.alert(
+        'Success!',
+        `Join code "${newCoupon.codeId}" has been created successfully.`,
+        [{ text: 'OK' }]
+      );
+      
+      // Refresh the invitation codes list
+      await fetchCoupons();
+      
+    } catch (error: any) {
+      console.error('Error creating coupon:', error);
+      
+      // Handle different error types
+      let errorMessage = 'Failed to create join code. Please try again.';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'You are not authorized. Please log in again.';
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Invalid request. Please check your input.';
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error.message === 'Network Error') {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+      
+      Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleCopyCode = (code: string) => {
@@ -75,10 +155,12 @@ export default function AddStudent() {
           </View>
 
           {/* Generate New Join Code Form */}
-          <GenerateCodeForm onGenerate={handleGenerate} />
+          <GenerateCodeForm onGenerate={handleGenerate} isLoading={isGenerating} />
 
           {/* Invitation Codes List */}
           <InvitationCodesList
+            coupons={coupons}
+            isLoading={isLoadingCoupons}
             onCopyCode={handleCopyCode}
             onShareCode={handleShareCode}
             onShowQR={handleShowQR}

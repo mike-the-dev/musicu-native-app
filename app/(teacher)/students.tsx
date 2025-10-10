@@ -1,9 +1,12 @@
 import { AddStudentButton, StudentCard, StudentSearch } from '@/components/students';
-import React, { useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { studentAPI } from '@/lib/api';
+import { StudentDTO } from '@/types/student';
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, Text, View } from 'react-native';
 
 interface Student {
-  id: number;
+  id: string;
   name: string;
   instrument: string;
   level: string;
@@ -15,34 +18,64 @@ export default function TeacherStudents() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterValue, setFilterValue] = useState('All Students');
   const [sortValue, setSortValue] = useState('Name');
+  const [studentDTOs, setStudentDTOs] = useState<StudentDTO[]>([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(true);
 
-  // Sample student data matching the design
-  const students: Student[] = [
-    {
-      id: 1,
-      name: 'Emma Davis',
-      instrument: 'Piano',
-      level: 'advanced',
-      lastPracticeDays: 28,
-      avatarColor: 'yellow'
-    },
-    {
-      id: 2,
-      name: 'Mike Chen',
-      instrument: 'Guitar',
-      level: 'beginner',
-      lastPracticeDays: 7,
-      avatarColor: 'orange'
-    },
-    {
-      id: 3,
-      name: 'Sarah Johnson',
-      instrument: 'Piano',
-      level: 'intermediate',
-      lastPracticeDays: 12,
-      avatarColor: 'orange'
+  // Fetch students from the backend
+  const fetchStudents = async () => {
+    try {
+      setIsLoadingStudents(true);
+      console.log('Fetching students...');
+      
+      const fetchedStudents = await studentAPI.listStudents();
+      console.log('Students fetched successfully:', fetchedStudents);
+      
+      setStudentDTOs(fetchedStudents);
+    } catch (error: any) {
+      console.error('Error fetching students:', error);
+      
+      // Handle different error types
+      let errorMessage = 'Failed to load students.';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'You are not authorized. Please log in again.';
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error.message === 'Network Error') {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+      
+      Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
+    } finally {
+      setIsLoadingStudents(false);
     }
-  ];
+  };
+
+  // Fetch students when the screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchStudents();
+    }, [])
+  );
+
+  // Map StudentDTO to Student interface for display
+  const students: Student[] = studentDTOs.map((studentDTO, index) => {
+    const avatarColors = ['yellow', 'orange', 'blue', 'green', 'purple', 'pink'];
+    
+    // Calculate days since last practice (placeholder for now)
+    const createdDate = new Date(studentDTO.createdAt);
+    const now = new Date();
+    const daysSinceCreated = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return {
+      id: studentDTO.id,
+      name: studentDTO.fullName,
+      instrument: studentDTO.instrument || 'Unknown',
+      level: 'intermediate', // You can add this field to backend later if needed
+      lastPracticeDays: daysSinceCreated, // Placeholder - replace with real practice data when available
+      avatarColor: avatarColors[index % avatarColors.length]
+    };
+  });
 
   // AddStudentButton now handles navigation automatically
 
@@ -98,29 +131,49 @@ export default function TeacherStudents() {
             <AddStudentButton />
           </View>
 
-          {/* Search and Filter Section */}
-          <StudentSearch
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            filterValue={filterValue}
-            onFilterChange={setFilterValue}
-            sortValue={sortValue}
-            onSortChange={setSortValue}
-            studentCount={sortedStudents.length}
-          />
+          {/* Loading State */}
+          {isLoadingStudents && (
+            <View className="py-8 items-center">
+              <ActivityIndicator size="large" color="#3b82f6" />
+              <Text className="text-slate-600 mt-2">Loading students...</Text>
+            </View>
+          )}
 
-          {/* Student Cards */}
-          <View>
-            {sortedStudents.map((student) => (
-              <StudentCard
-                key={student.id}
-                student={student}
-                onPractice={handleStudentPractice}
-                onMessage={handleStudentMessage}
-                onReport={handleStudentReport}
+          {/* Empty State */}
+          {!isLoadingStudents && students.length === 0 && (
+            <View className="py-8 items-center">
+              <Text className="text-slate-600 text-lg mb-2">No students yet</Text>
+              <Text className="text-slate-500">Add your first student to get started</Text>
+            </View>
+          )}
+
+          {/* Search and Filter Section */}
+          {!isLoadingStudents && students.length > 0 && (
+            <>
+              <StudentSearch
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                filterValue={filterValue}
+                onFilterChange={setFilterValue}
+                sortValue={sortValue}
+                onSortChange={setSortValue}
+                studentCount={sortedStudents.length}
               />
-            ))}
-          </View>
+
+              {/* Student Cards */}
+              <View>
+                {sortedStudents.map((student) => (
+                  <StudentCard
+                    key={student.id}
+                    student={student}
+                    onPractice={handleStudentPractice}
+                    onMessage={handleStudentMessage}
+                    onReport={handleStudentReport}
+                  />
+                ))}
+              </View>
+            </>
+          )}
         </View>
       </ScrollView>
     </View>

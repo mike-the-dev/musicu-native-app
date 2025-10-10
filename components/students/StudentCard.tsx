@@ -5,7 +5,7 @@ import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 interface Student {
-  id: number;
+  id: string;
   name: string;
   instrument: string;
   level: string;

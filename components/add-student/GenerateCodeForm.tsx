@@ -1,22 +1,59 @@
 import { ClayButton } from '@/components/ui/clay-button';
 import { ClayCard } from '@/components/ui/clay-card';
+import { CouponInput } from '@/types/coupon';
 import { Feather } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import React, { useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
 
 interface GenerateCodeFormProps {
-  onGenerate: (useLimit: string, expiresIn: string) => void;
+  onGenerate: (couponData: CouponInput) => Promise<void>;
+  isLoading?: boolean;
 }
 
-export default function GenerateCodeForm({ onGenerate }: GenerateCodeFormProps) {
+export default function GenerateCodeForm({ onGenerate, isLoading = false }: GenerateCodeFormProps) {
   const [useLimit, setUseLimit] = useState('Single Use');
   const [expiresIn, setExpiresIn] = useState('14 Days');
   const [showUseLimitPicker, setShowUseLimitPicker] = useState(false);
   const [showExpiresInPicker, setShowExpiresInPicker] = useState(false);
 
-  const handleGenerate = () => {
-    onGenerate(useLimit, expiresIn);
+  // Map UI values to API values
+  const mapUseLimitToAPI = (uiValue: string): CouponInput['usageType'] => {
+    switch (uiValue) {
+      case 'Single Use':
+        return 'single_use';
+      case 'Multiple Use':
+        return 'multiple_use';
+      case 'Unlimited':
+        return 'unlimited';
+      default:
+        return 'single_use';
+    }
+  };
+
+  const mapExpiresInToAPI = (uiValue: string): CouponInput['expiresIn'] => {
+    switch (uiValue) {
+      case '1 Day':
+        return '1_day';
+      case '7 Days':
+        return '7_days';
+      case '14 Days':
+        return '14_days';
+      case '30 Days':
+        return '30_days';
+      case 'Never':
+        return 'never';
+      default:
+        return '14_days';
+    }
+  };
+
+  const handleGenerate = async () => {
+    const couponData: CouponInput = {
+      usageType: mapUseLimitToAPI(useLimit),
+      expiresIn: mapExpiresInToAPI(expiresIn),
+    };
+    await onGenerate(couponData);
   };
 
   return (
@@ -48,10 +85,21 @@ export default function GenerateCodeForm({ onGenerate }: GenerateCodeFormProps) 
       </View>
 
       {/* Generate Button */}
-      <ClayButton onPress={handleGenerate} variant="secondary" className="mt-2">
+      <ClayButton 
+        onPress={handleGenerate} 
+        variant="secondary" 
+        className="mt-2"
+        disabled={isLoading}
+      >
         <View className="flex-row items-center justify-center gap-2">
-          <Feather name="plus" size={16} color="white" />
-          <Text className="text-white font-semibold">Generate</Text>
+          {isLoading ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Feather name="plus" size={16} color="white" />
+          )}
+          <Text className="text-white font-semibold">
+            {isLoading ? 'Generating...' : 'Generate'}
+          </Text>
         </View>
       </ClayButton>
 
